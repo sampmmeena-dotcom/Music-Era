@@ -98,7 +98,6 @@ if (res.ok) {
   alert(error.error); // Shows "Login failed"
 }
 
-
 // 🎶 Playlist page
 app.get('/playlist', verifyToken, (req, res) => {
   const songs = fs.readdirSync('./public').filter(file => file.endsWith('.mp3'));
