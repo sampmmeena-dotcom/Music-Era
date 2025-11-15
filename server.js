@@ -6,7 +6,7 @@ const multer = require('multer');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 const SECRET = 'your_secret_key';
 
 app.use(bodyParser.json());
@@ -37,7 +37,7 @@ function verifyToken(req, res, next) {
 
 // 🎨 Serve login page
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 // 🎶 Playlist route
@@ -79,7 +79,6 @@ app.get('/play', verifyToken, (req, res) => {
 });
 
 // 📤 Upload song
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userDir = path.join(__dirname, 'public', 'users', req.user.email);
@@ -101,12 +100,14 @@ const upload = multer({
   }
 });
 
-// 🚀 Start server
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/login.html');
+app.post('/upload', verifyToken, upload.single('song'), (req, res) => {
+  res.redirect(`/playlist?token=${req.query.token}`);
 });
+
+// 🆕 Signup route
 const usersFile = path.join(__dirname, 'data', 'users.json');
-let users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '{}');
+let users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
+
 app.post('/signup', (req, res) => {
   const { email, password } = req.body;
 
@@ -120,9 +121,12 @@ app.post('/signup', (req, res) => {
   }
 
   users.push({ email, password });
-  const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '1h' });
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+  const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
   res.json({ token });
 });
+
+// 🎯 Get user playlist
 app.get('/api/playlist', verifyToken, (req, res) => {
   const userDir = path.join(__dirname, 'public', 'users', req.user.email);
   if (!fs.existsSync(userDir)) {
@@ -131,8 +135,12 @@ app.get('/api/playlist', verifyToken, (req, res) => {
 
   const songs = fs.readdirSync(userDir).filter(file => file.endsWith('.mp3'));
   res.json({ email: req.user.email, songs });
-});const favFile = path.join(__dirname, 'data', 'favorites.json');
+});
+
+// ❤️ Favorite songs
+const favFile = path.join(__dirname, 'data', 'favorites.json');
 let userFavorites = JSON.parse(fs.readFileSync(favFile, 'utf8') || '{}');
+
 app.post('/api/favorite', verifyToken, (req, res) => {
   const { song } = req.body;
   const email = req.user.email;
@@ -147,22 +155,19 @@ app.post('/api/favorite', verifyToken, (req, res) => {
 
   res.json({ success: true });
 });
+
 app.get('/api/favorite', verifyToken, (req, res) => {
   const email = req.user.email;
   const favorites = userFavorites[email] || [];
   res.json({ favorites });
 });
-app.post('/api/favorite', verifyToken, (req, res) => {
-  const { song } = req.body;
-  const email = req.user.email;
 
-  if (!song) return res.status(400).json({ error: 'No song provided' });
+// 🧹 Catch-all 404
+app.use((req, res) => {
+  res.status(404).send('Page not found');
+});
 
-  if (!userFavorites[email]) userFavorites[email] = [];
-  if (!userFavorites[email].includes(song)) {
-    userFavorites[email].push(song);
-    fs.writeFileSync(favFile, JSON.stringify(userFavorites, null, 2));
-  }
-
-  res.json({ success: true });
+// 🚀 Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
