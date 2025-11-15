@@ -202,9 +202,8 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
 async function loadData() {
-  const res = await fetch('https://music-metr.bxrvv.onrender.com/index.json');
-  const data = await res.json();
+   const data = await res.json();
   console.log(data);
 }
 
-loadData();
+
