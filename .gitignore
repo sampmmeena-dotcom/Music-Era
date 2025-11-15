@@ -2,7 +2,7 @@ node_modules
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/sammmeenaa-dotcom/music-era.git
+git remote add origin https://github.com/sampmeena-dotcom/music-era.git
 git push -u origin main
 git add .
 git commit -m "Ready for Render"
@@ -10,4 +10,5 @@ git push -u origin main
 git add data/users.json
 git commit -m "Add data/users.json to fix ENOENT error"
 git push
-serviceAccountKey.json
+secrets/
+*.json
