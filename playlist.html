@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Playlist</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h2>Welcome to Music Era 🎶</h2>
+  <div id="userInfo"></div>
+  <ul id="playlist"></ul>
+<h3>Your Favorites</h3>
+<ul id="favorites"></ul>
+<h3>Search Your Songs</h3>
+<input type="text" id="searchBox" placeholder="Type to search...">
+<ul id="playlist"></ul>
+  <h3>Upload a new song:</h3>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="song" accept=".mp3" required>
+    <button type="submit">Upload</button>
+  </form>
+
+  <button onclick="logout()">Logout</button>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/'; // Redirect to login if no token
+    }
+     
+    // Fetch playlist data
+    fetch('/api/playlist', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('userInfo').innerHTML = `<h3>Hello, ${data.email}</h3>`;
+      const list = data.songs.map(song =>
+  `<li><a href="/play.html?song=users/${data.email}/${encodeURIComponent(song)}">${song}</a></li>`
+).join('');
+      document.getElementById('playlist').innerHTML = list;
+    });
+
+    // Handle song upload
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData
+      });
+      if (res.ok) location.reload();
+    });
+
+    // Logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+  </script>
+  function shufflePlay() {
+  if (allSongs.length === 0) return;
+  const randomIndex = Math.floor(Math.random() * allSongs.length);
+  const song = allSongs[randomIndex];
+  window.location.href = `/play.html?song=users/${email}/${encodeURIComponent(song)}`;
+}
+
+function repeatPlay() {
+  const lastPlayed = localStorage.getItem('lastPlayed');
+  if (lastPlayed) {
+    window.location.href = `/play.html?song=${encodeURIComponent(lastPlayed)}`;
+  } else {
+    alert('No song played yet!');
+  }
+}
+</body>
+<h3>Playback Controls</h3>
+<button onclick="shufflePlay()">🔀 Shuffle</button>
+<button onclick="repeatPlay()">🔁 Repeat Last</button>
+</html>
+const list = data.songs.map(song =>
+  `<li>
+     <a href="/play.html?song=users/${data.email}/${encodeURIComponent(song)}">${song}</a>
+     <button onclick="markFavorite('${song}')">❤️</button>
+   </li>`
+).join('');
+function markFavorite(song) {
+  fetch('/api/favorite', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify({ song })
+  }).then(res => {
+    if (res.ok) alert('Added to favorites!');
+  });
+}
+fetch('/api/favorite', {
+  headers: { 'Authorization': 'Bearer ' + token }
+})
+.then(res => res.json())
+.then(data => {
+  const favList = data.favorites.map(song =>
+    `<li><a href="/play.html?song=users/${email}/${encodeURIComponent(song)}">${song}</a></li>`
+  ).join('');
+  document.getElementById('favorites').innerHTML = favList;
+});
+let allSongs = [];
+
+fetch('/api/playlist', {
+  headers: { 'Authorization': 'Bearer ' + token }
+})
+.then(res => res.json())
+.then(data => {
+  document.getElementById('userInfo').innerHTML = `<h3>Hello, ${data.email}</h3>`;
+  allSongs = data.songs;
+  renderPlaylist(allSongs, data.email);
+});
+
+function renderPlaylist(songs, email) {
+  const list = songs.map(song =>
+    `<li>
+      <a href="/play.html?song=users/${email}/${encodeURIComponent(song)}">${song}</a>
+      <button onclick="markFavorite('${song}')">❤️</button>
+    </li>`
+  ).join('');
+  document.getElementById('playlist').innerHTML = list;
+}
+
+document.getElementById('searchBox').addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase();
+  const filtered = allSongs.filter(song => song.toLowerCase().includes(query));
+  renderPlaylist(filtered, email);
+});
