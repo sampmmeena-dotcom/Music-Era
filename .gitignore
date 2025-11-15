@@ -7,3 +7,6 @@ git push -u origin main
 git add .
 git commit -m "Ready for Render"
 git push -u origin main
+git add data/users.json
+git commit -m "Add data/users.json to fix ENOENT error"
+git push
