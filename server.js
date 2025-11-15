@@ -44,7 +44,7 @@ app.post('/login', (req, res) => {
 
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
   if (users[email] && users[email].password === password) {
-    res.send('Login successful');
+    res.json({ token: 'dummy-token' });
   } else {
     res.status(401).send('Login failed');
   }

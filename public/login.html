@@ -39,3 +39,8 @@
 <p>Don't have an account? <a href="/signup">Sign up here</a></p>
 localStorage.setItem('token', data.token); // Save token
 window.location.href = '/playlist.html';   // Redirect to playlist page
+const res = await fetch('https://music-era-bvwx.onrender.com/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
+});
