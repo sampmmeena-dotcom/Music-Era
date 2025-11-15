@@ -211,12 +211,21 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
 async function loadData() {
-  const res = await fetch('https://music-env.bxvv.onrender.com/api');
-  const data = await res.json();
-  console.log(data);
-}
-loadData();
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
+ app.post('/login', async (req, res) => {
+   const { email, password } = req.body;
 
+   try {
+     const response = await fetch('https://music-env.bxvv.onrender.com/login', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ email, password })
+     });
+
+     const data = await response.json();
+     res.json(data);
+   } catch (error) {
+     console.error('❌ Error during fetch:', error);
+     res.status(500).json({ error: 'Login request failed' });
+   }
+ });
+}
