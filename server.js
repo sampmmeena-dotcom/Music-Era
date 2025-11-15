@@ -46,6 +46,9 @@ app.post('/login', (req, res) => {
 
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
   console.log('Loaded users:', users);
+  console.log('Login attempt:', email, password);
+console.log('Loaded users:', users);
+console.log('User match:', users[email]);
 
   if (users[email] && users[email].password === password) {
     console.log('✅ Login success');
@@ -213,4 +216,7 @@ async function loadData() {
   console.log(data);
 }
 loadData();
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
