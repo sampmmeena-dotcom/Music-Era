@@ -9,22 +9,56 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SECRET = 'your_secret_key';
 
+// Middleware
 app.use(bodyParser.json());
 app.use(express.static('public'));
+
+// Load users
+const usersPath = path.join(__dirname, 'data', 'users.json');
+let users = [];
+try {
+  const rawData = fs.readFileSync(usersPath, 'utf-8');
+  users = JSON.parse(rawData);
+} catch (err) {
+  console.error('Error reading users.json:', err.message);
+}
+
+// Load favorites
+const favFile = path.join(__dirname, 'data', 'favorites.json');
+let userFavorites = {};
+try {
+  userFavorites = JSON.parse(fs.readFileSync(favFile, 'utf8') || '{}');
+} catch (err) {
+  console.error('Error reading favorites.json:', err.message);
+}
 
 // 🔐 Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if (email && password) {
-    const user = { email };
-    const token = jwt.sign(user, SECRET);
+  const user = users.find(u => u.email === email && u.password === password);
+  if (user) {
+    const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
     res.json({ token });
   } else {
-    res.status(400).json({ error: 'Email and password required' });
+    res.status(401).json({ error: 'Invalid credentials' });
   }
 });
 
-// 🛡️ Middleware to verify token
+// 🆕 Signup route
+app.post('/signup', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const existingUser = users.find(u => u.email === email);
+  if (existingUser) return res.status(409).json({ error: 'User already exists' });
+
+  users.push({ email, password });
+  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+  const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+// 🛡️ Token middleware
 function verifyToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1] || req.query.token;
   if (!token) return res.sendStatus(401);
@@ -35,12 +69,12 @@ function verifyToken(req, res, next) {
   });
 }
 
-// 🎨 Serve login page
+// 🎨 Login page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 🎶 Playlist route
+// 🎶 Playlist page
 app.get('/playlist', verifyToken, (req, res) => {
   const songs = fs.readdirSync('./public').filter(file => file.endsWith('.mp3'));
   const list = songs.map(song => `<li><a href="/play?song=${encodeURIComponent(song)}&token=${req.query.token}">${song}</a></li>`).join('');
@@ -104,47 +138,19 @@ app.post('/upload', verifyToken, upload.single('song'), (req, res) => {
   res.redirect(`/playlist?token=${req.query.token}`);
 });
 
-// 🆕 Signup route
-const usersFile = path.join(__dirname, 'data', 'users.json');
-let users = JSON.parse(fs.readFileSync(usersFile, 'utf8') || '[]');
-
-app.post('/signup', (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-  }
-
-  const existingUser = users.find(u => u.email === email);
-  if (existingUser) {
-    return res.status(409).json({ error: 'User already exists' });
-  }
-
-  users.push({ email, password });
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-  const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
-  res.json({ token });
-});
-
 // 🎯 Get user playlist
 app.get('/api/playlist', verifyToken, (req, res) => {
   const userDir = path.join(__dirname, 'public', 'users', req.user.email);
-  if (!fs.existsSync(userDir)) {
-    return res.json({ email: req.user.email, songs: [] });
-  }
+  if (!fs.existsSync(userDir)) return res.json({ email: req.user.email, songs: [] });
 
   const songs = fs.readdirSync(userDir).filter(file => file.endsWith('.mp3'));
   res.json({ email: req.user.email, songs });
 });
 
 // ❤️ Favorite songs
-const favFile = path.join(__dirname, 'data', 'favorites.json');
-let userFavorites = JSON.parse(fs.readFileSync(favFile, 'utf8') || '{}');
-
 app.post('/api/favorite', verifyToken, (req, res) => {
   const { song } = req.body;
   const email = req.user.email;
-
   if (!song) return res.status(400).json({ error: 'No song provided' });
 
   if (!userFavorites[email]) userFavorites[email] = [];
@@ -162,12 +168,12 @@ app.get('/api/favorite', verifyToken, (req, res) => {
   res.json({ favorites });
 });
 
-// 🧹 Catch-all 404
+// 🧹 404 fallback
 app.use((req, res) => {
   res.status(404).send('Page not found');
 });
 
 // 🚀 Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
