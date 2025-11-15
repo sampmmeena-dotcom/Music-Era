@@ -6,6 +6,7 @@ const multer = require('multer');
 const bodyParser = require('body-parser');
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const SECRET = 'your_secret_key';
 
@@ -35,27 +36,37 @@ try {
 // 🔐 Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
-  if (user) {
-    const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
-    res.json({ token });
+  const usersPath = path.join(__dirname, 'data', 'users.json');
+
+  if (!fs.existsSync(usersPath)) {
+    return res.status(500).send('User data missing');
+  }
+
+  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  if (users[email] && users[email].password === password) {
+    res.send('Login successful');
   } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+    res.status(401).send('Login failed');
   }
 });
 
 // 🆕 Signup route
 app.post('/signup', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const usersPath = path.join(__dirname, 'data', 'users.json');
 
-  const existingUser = users.find(u => u.email === email);
-  if (existingUser) return res.status(409).json({ error: 'User already exists' });
+  let users = {};
+  if (fs.existsSync(usersPath)) {
+    users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  }
 
-  users.push({ email, password });
+  if (users[email]) {
+    return res.status(400).send('User already exists');
+  }
+
+  users[email] = { password, favorites: [] };
   fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
-  const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
-  res.json({ token });
+  res.send('Signup successful');
 });
 
 // 🛡️ Token middleware
@@ -72,6 +83,11 @@ function verifyToken(req, res, next) {
 // 🎨 Login page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+const res = await fetch('https://music-env.bxvv.onrender.com/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
 });
 
 // 🎶 Playlist page

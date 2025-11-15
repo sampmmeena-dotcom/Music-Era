@@ -50,3 +50,7 @@ app.post('/signup', (req, res) => {
   const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '1h' });
   res.json({ token });
 });
+{
+  "email": "test@example.com",
+  "password": "123456"
+}
