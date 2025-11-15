@@ -39,14 +39,14 @@ app.post('/login', (req, res) => {
   const usersPath = path.join(__dirname, 'data', 'users.json');
 
   if (!fs.existsSync(usersPath)) {
-    return res.status(500).send('User data missing');
+    return res.status(500).json({ error: 'User data missing' });
   }
 
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
   if (users[email] && users[email].password === password) {
-    res.json({ token: 'dummy-token' });
+    res.json({ token: 'dummy-token' }); // ✅ JSON response
   } else {
-    res.status(401).send('Login failed');
+    res.status(401).json({ error: 'Login failed' }); // ✅ JSON error
   }
 });
 
@@ -89,6 +89,15 @@ const res = await fetch('https://music-env.bxvv.onrender.com/login', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ email, password })
 });
+if (res.ok) {
+  const data = await res.json(); // ✅ Parse JSON
+  localStorage.setItem('token', data.token);
+  window.location.href = '/playlist.html';
+} else {
+  const error = await res.json();
+  alert(error.error); // Shows "Login failed"
+}
+
 
 // 🎶 Playlist page
 app.get('/playlist', verifyToken, (req, res) => {
@@ -193,3 +202,10 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+async function loadData() {
+  const res = await fetch('https://music-metr.bxrvv.onrender.com/index.json');
+  const data = await res.json();
+  console.log(data);
+}
+
+loadData();
