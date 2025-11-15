@@ -36,17 +36,23 @@ try {
 // 🔐 Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  const usersPath = path.join(__dirname, 'data', 'users.json');
+  console.log('Login attempt:', email, password);
 
+  const usersPath = path.join(__dirname, 'data', 'users.json');
   if (!fs.existsSync(usersPath)) {
+    console.error('❌ users.json not found');
     return res.status(500).json({ error: 'User data missing' });
   }
 
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  console.log('Loaded users:', users);
+
   if (users[email] && users[email].password === password) {
-    res.json({ token: 'dummy-token' }); // ✅ JSON response
+    console.log('✅ Login success');
+    res.json({ token: 'dummy-token' });
   } else {
-    res.status(401).json({ error: 'Login failed' }); // ✅ JSON error
+    console.log('❌ Login failed');
+    res.status(401).json({ error: 'Login failed' });
   }
 });
 
