@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Signup</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h2>Create Your Music Era Account 🎶</h2>
+  <form id="signupForm">
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <button type="submit">Sign Up</button>
+  </form>
+
+  <p>Already have an account? <a href="/">Login here</a></p>
+
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      if (data.token) {
+        window.location.href = '/playlist?token=' + data.token;
+      } else {
+        alert('Signup failed');
+      }
+    });
+  </script>
+</body>
+</html>
+localStorage.setItem('token', data.token); // Save token
+window.location.href = '/playlist.html';   // Redirect to playlist page
+app.post('/signup', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  if (users[email]) return res.status(409).json({ error: 'User already exists' });
+
+  users[email] = { email, password };
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+
+  const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '1h' });
+  res.json({ token });
+});
