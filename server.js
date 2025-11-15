@@ -202,8 +202,9 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
 async function loadData() {
-   const data = await res.json();
+  const res = await fetch('https://music-env.bxvv.onrender.com/api');
+  const data = await res.json();
   console.log(data);
 }
-
+loadData();
 
