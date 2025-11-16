@@ -25,14 +25,15 @@ try {
 }
 
 // Load favorites
-const favFile = path.join(__dirname, 'data', 'favorites.json');
-let userFavorites = {};
-try {
-  userFavorites = JSON.parse(fs.readFileSync(favFile, 'utf8') || '{}');
-} catch (err) {
-  console.error('Error reading favorites.json:', err.message);
+const favoritesPath = path.join(__dirname, 'data', 'favorites.json');
+let favorites = {};
+
+if (!fs.existsSync(favoritesPath)) {
+  fs.writeFileSync(favoritesPath, JSON.stringify({}));
+  console.log('✅ Created missing favorites.json');
 }
 
+favorites = JSON.parse(fs.readFileSync(favoritesPath, 'utf8'));
 // 🔐 Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -185,4 +186,87 @@ app.use((req, res) => {
 // 🚀 Start server
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+});
+app.get('/api/playlists', verifyToken, (req, res) => {
+  const email = req.user.email;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  res.json({ playlists: playlists[email] || {} });
+});
+app.post('/api/playlists', verifyToken, (req, res) => {
+  const { playlistName, song } = req.body;
+  const email = req.user.email;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  if (!playlists[email]) playlists[email] = {};
+  if (!playlists[email][playlistName]) playlists[email][playlistName] = [];
+  if (!playlists[email][playlistName].includes(song)) {
+    playlists[email][playlistName].push(song);
+    fs.writeFileSync(playlistsPath, JSON.stringify(playlists, null, 2));
+  }
+  res.json({ success: true });
+});
+app.post('/api/playlists/remove', verifyToken, (req, res) => {
+  const { playlistName, song } = req.body;
+  const email = req.user.email;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  if (playlists[email] && playlists[email][playlistName]) {
+    playlists[email][playlistName] = playlists[email][playlistName].filter(s => s !== song);
+    fs.writeFileSync(playlistsPath, JSON.stringify(playlists, null, 2));
+  }
+  res.json({ success: true });
+});
+app.post('/api/playlists/delete', verifyToken, (req, res) => {
+  const { playlistName } = req.body;
+  const email = req.user.email;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  if (playlists[email]) {
+    delete playlists[email][playlistName];
+    fs.writeFileSync(playlistsPath, JSON.stringify(playlists, null, 2));
+  }
+  res.json({ success: true });
+});
+app.get('/api/public-playlist', (req, res) => {
+  const { user, playlist } = req.query;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  const songs = playlists[user]?.[playlist] || [];
+  res.json({ songs });
+});
+const coverUpload = multer({ dest: 'public/covers/' });
+
+app.post('/api/playlist-cover', verifyToken, coverUpload.single('cover'), (req, res) => {
+  const email = req.user.email;
+  const playlistName = req.body.playlistName;
+  const filename = req.file.filename;
+
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+  
+  if (!playlists[email]) playlists[email] = {};
+  if (!playlists[email][playlistName]) playlists[email][playlistName] = { songs: [] };
+  playlists[email][playlistName].cover = filename;
+
+  fs.writeFileSync(playlistsPath, JSON.stringify(playlists, null, 2));
+  res.json({ success: true });
 });
