@@ -93,19 +93,6 @@ function verifyToken(req, res, next) {
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
-const res = await fetch('https://music-env.bxvv.onrender.com/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
-});
-if (res.ok) {
-  const data = await res.json(); // ✅ Parse JSON
-  localStorage.setItem('token', data.token);
-  window.location.href = '/playlist.html';
-} else {
-  const error = await res.json();
-  alert(error.error); // Shows "Login failed"
-}
 
 // 🎶 Playlist page
 app.get('/playlist', verifyToken, (req, res) => {
