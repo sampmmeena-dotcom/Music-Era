@@ -16,7 +16,7 @@ app.use(express.static('public'));
 
 // Load users
 const usersPath = path.join(__dirname, 'data', 'users.json');
-let users = [];
+let users = {};
 try {
   const rawData = fs.readFileSync(usersPath, 'utf-8');
   users = JSON.parse(rawData);
@@ -36,38 +36,26 @@ try {
 // 🔐 Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  console.log('Login attempt:', email, password);
+  console.log('Login attempt:', email);
 
-  const usersPath = path.join(__dirname, 'data', 'users.json');
-  if (!fs.existsSync(usersPath)) {
-    console.error('❌ users.json not found');
-    return res.status(500).json({ error: 'User data missing' });
+  if (!users[email]) {
+    console.log('❌ Email not found');
+    return res.status(401).json({ error: 'Login failed' });
   }
 
-  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-  console.log('Loaded users:', users);
-  console.log('Login attempt:', email, password);
-console.log('Loaded users:', users);
-console.log('User match:', users[email]);
-
-  if (users[email] && users[email].password === password) {
-    console.log('✅ Login success');
-    res.json({ token: 'dummy-token' });
-  } else {
-    console.log('❌ Login failed');
-    res.status(401).json({ error: 'Login failed' });
+  if (users[email].password !== password) {
+    console.log('❌ Incorrect password');
+    return res.status(401).json({ error: 'Login failed' });
   }
+
+  const token = jwt.sign({ email }, SECRET, { expiresIn: '1h' });
+  console.log('✅ Login success');
+  res.json({ token });
 });
 
 // 🆕 Signup route
 app.post('/signup', (req, res) => {
   const { email, password } = req.body;
-  const usersPath = path.join(__dirname, 'data', 'users.json');
-
-  let users = {};
-  if (fs.existsSync(usersPath)) {
-    users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-  }
 
   if (users[email]) {
     return res.status(400).send('User already exists');
@@ -82,9 +70,10 @@ app.post('/signup', (req, res) => {
 function verifyToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1] || req.query.token;
   if (!token) return res.sendStatus(401);
-  jwt.verify(token, SECRET, (err, user) => {
+
+  jwt.verify(token, SECRET, (err, decoded) => {
     if (err) return res.sendStatus(403);
-    req.user = user;
+    req.user = decoded;
     next();
   });
 }
