@@ -210,13 +210,3 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-
-  if (users[email] && users[email].password === password) {
-    res.json({ token: 'dummy-token' });
-  } else {
-    res.status(401).json({ error: 'Login failed' });
-  }
-});
