@@ -149,12 +149,16 @@ app.post('/upload', verifyToken, upload.single('song'), (req, res) => {
 });
 
 // 🎯 Get user playlist
-app.get('/api/playlist', verifyToken, (req, res) => {
-  const userDir = path.join(__dirname, 'public', 'users', req.user.email);
-  if (!fs.existsSync(userDir)) return res.json({ email: req.user.email, songs: [] });
+app.get('/api/playlists', verifyToken, (req, res) => {
+  const email = req.user.email;
+  const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+  let playlists = {};
 
-  const songs = fs.readdirSync(userDir).filter(file => file.endsWith('.mp3'));
-  res.json({ email: req.user.email, songs });
+  if (fs.existsSync(playlistsPath)) {
+    playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
+  }
+
+  res.json(playlists[email] || {});
 });
 
 // ❤️ Favorite songs
