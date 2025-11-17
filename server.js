@@ -68,6 +68,11 @@ app.get('/api/playlists', verifyToken, (req, res) => {
   const playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
   res.json(playlists[email] || {});
 });
+function updateNowPlaying(song, playlist) {
+  document.getElementById('song-title').textContent = song;
+  document.getElementById('playlist-name').textContent = `Playlist: ${playlist}`;
+  document.getElementById('album-art').src = `covers/${playlist}.jpg`; // fallback if not found
+}
 
 app.post('/api/add-to-playlist', verifyToken, (req, res) => {
   const { name, song } = req.body;

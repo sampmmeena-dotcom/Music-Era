@@ -43,3 +43,14 @@ audio {
     font-size: 0.9rem;
   }
 }
+.now-playing {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.now-playing img {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+}

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Explore Playlists</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Explore Public Playlists</h2>
+    <div id="explore-list"></div>
+  </div>
+
+  <script>
+    const publicPlaylists = [
+      { email: "sampm.meena@gmail.com", name: "My Playlist" },
+      { email: "demo@music.com", name: "Chill Vibes" }
+    ];
+
+    publicPlaylists.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'playlist-item';
+      div.innerHTML = `
+        <strong>${p.name}</strong>
+        <button onclick="window.location.href='/api/public-playlist/${p.email}/${p.name}'">Play</button>
+      `;
+      document.getElementById('explore-list').appendChild(div);
+    });
+  </script>
+</body>
+</html>
