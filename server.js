@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 
 const app = express();
 app.use(express.json());
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 const SECRET = 'your_secret_key';
 
 // Middleware
@@ -160,6 +160,11 @@ app.get('/api/playlists', verifyToken, (req, res) => {
 
   res.json(playlists[email] || {});
 });
+const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
+if (!fs.existsSync(playlistsPath)) {
+  fs.writeFileSync(playlistsPath, JSON.stringify({}));
+  console.log('✅ Created missing playlists.json');
+}
 
 // ❤️ Favorite songs
 app.post('/api/favorite', verifyToken, (req, res) => {
@@ -188,8 +193,9 @@ app.use((req, res) => {
 });
 
 // 🚀 Start server
+
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 app.get('/api/playlists', verifyToken, (req, res) => {
   const email = req.user.email;
