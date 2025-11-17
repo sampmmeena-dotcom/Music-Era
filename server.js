@@ -4,6 +4,10 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const multer = require('multer');
+const songsDir = path.join(__dirname, 'public', 'songs');
+if (!fs.existsSync(songsDir)) {
+  fs.mkdirSync(songsDir, { recursive: true });
+}
 
 const app = express();
 app.use(cors());
