@@ -1,15 +1,9 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// ✅ Create /public/songs only if it doesn't exist
-const songsDir = path.join(__dirname, 'public', 'songs');
-if (!fs.existsSync(songsDir)) {
-  fs.mkdirSync(songsDir, { recursive: true });
-}
 
 const app = express();
 app.use(cors());
@@ -21,6 +15,13 @@ const usersPath = path.join(__dirname, 'data', 'users.json');
 const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
 const favoritesPath = path.join(__dirname, 'data', 'favorites.json');
 
+// ✅ Ensure songs folder exists
+const songsDir = path.join(__dirname, 'public', 'songs');
+if (!fs.existsSync(songsDir)) {
+  fs.mkdirSync(songsDir, { recursive: true });
+}
+
+// ✅ Ensure data files exist
 if (!fs.existsSync(usersPath)) fs.writeFileSync(usersPath, JSON.stringify({}));
 if (!fs.existsSync(playlistsPath)) fs.writeFileSync(playlistsPath, JSON.stringify({}));
 if (!fs.existsSync(favoritesPath)) fs.writeFileSync(favoritesPath, JSON.stringify({}));
@@ -39,16 +40,13 @@ function verifyToken(req, res, next) {
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-
   if (!users[email]) {
     users[email] = { email, password };
     fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
   }
-
   if (users[email].password !== password) {
     return res.status(403).json({ error: 'Wrong password' });
   }
-
   const token = jwt.sign({ email }, SECRET);
   res.json({ token });
 });
@@ -109,6 +107,8 @@ app.post('/api/favorites', verifyToken, (req, res) => {
   fs.writeFileSync(favoritesPath, JSON.stringify(favorites, null, 2));
   res.json({ success: true });
 });
+
+// ✅ Serve login page at root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
