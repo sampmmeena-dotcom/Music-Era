@@ -1,161 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <title>My Music Era</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
-    h1 { color: #333; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 10px 0; background: #fff; padding: 10px; border-radius: 5px; }
-    button { margin-left: 5px; }
-    #player { width: 100%; margin-top: 20px; }
-  </style>
+  <title>Your Playlist</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </head>
 <body>
-  <h1>Welcome <span id="user-email"></span></h1>
+  <div class="container">
+    <h2 id="welcome">Welcome</h2>
 
-  <h2>Your Playlist:</h2>
-  <div id="playlist-container"></div>
+    <h3>Your Playlist:</h3>
+    <form id="upload-form">
+      <input type="file" id="song" accept="audio/*" required>
+      <button type="submit">Upload</button>
+    </form>
 
-  <h3>Upload a New Song</h3>
-  <form id="upload-form" enctype="multipart/form-data">
-    <input type="file" name="song" accept=".mp3" required>
-    <button type="submit">Upload</button>
-  </form>
+    <audio id="player" controls></audio>
 
-  <audio id="player" controls>
-    <source id="player-source" src="" type="audio/mpeg">
-    Your browser does not support the audio element.
-  </audio>
-  </div>
-   
-  <div id="now-playing" class="now-playing">
-  <img id="album-art" src="covers/default.jpg" alt="Album Art" />
-  <div>
-    <h3 id="song-title">Song Title</h3>
-    <p id="playlist-name">Playlist: My Playlist</p>
-  </div>
+    <div id="now-playing" class="now-playing">
+      <img id="album-art" src="covers/default.jpg" alt="Album Art" />
+      <div>
+        <h3 id="song-title">Song Title</h3>
+        <p id="playlist-name">Playlist: My Playlist</p>
+      </div>
+    </div>
 
-  <div style="margin-top: 10px;">
-    <button onclick="toggleShuffle()">🔀 Shuffle</button>
-    <button onclick="toggleRepeat()">🔁 Repeat</button>
+    <button id="shuffle">Shuffle</button>
+    <button id="repeat">Repeat</button>
   </div>
 
-  <script>
-    const token = localStorage.getItem('token');
-    let currentPlaylist = [];
-    let currentIndex = 0;
-    let isShuffle = false;
-    let isRepeat = false;
-
-    fetch('/api/profile', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(res => res.json())
-      .then(data => {
-        document.getElementById('user-email').textContent = data.email;
-      });
-
-    fetch('/api/playlists', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('playlist-container');
-        container.innerHTML = '';
-
-        Object.entries(data).forEach(([name, playlist]) => {
-          const list = playlist.songs.map(song => `
-            <li>
-              ${song}
-              <button onclick="playSong('${song}', ${JSON.stringify(playlist.songs)})">▶️ Play</button>
-              <button onclick="promptAddToPlaylist('${song}')">➕ Add</button>
-              <button onclick="removeFromPlaylist('${name}', '${song}')">🗑️ Remove</button>
-              <button onclick="toggleFavorite('${song}')">❤️ Favorite</button>
-            </li>
-          `).join('');
-
-          container.innerHTML += `<h3>${name}</h3><ul>${list}</ul>`;
-        });
-      });
-
-    function playSong(song, playlist = []) {
-      const player = document.getElementById('player');
-      const source = document.getElementById('player-source');
-      currentPlaylist = playlist;
-      currentIndex = playlist.indexOf(song);
-      source.src = `/songs/${song}`;
-      player.load();
-      player.play();
-    }
-
-    function toggleShuffle() {
-      isShuffle = !isShuffle;
-      alert(`Shuffle is now ${isShuffle ? 'ON' : 'OFF'}`);
-    }
-
-    function toggleRepeat() {
-      isRepeat = !isRepeat;
-      alert(`Repeat is now ${isRepeat ? 'ON' : 'OFF'}`);
-    }
-
-    document.getElementById('player').addEventListener('ended', () => {
-      if (isRepeat) {
-        playSong(currentPlaylist[currentIndex], currentPlaylist);
-      } else {
-        currentIndex = isShuffle
-          ? Math.floor(Math.random() * currentPlaylist.length)
-          : (currentIndex + 1) % currentPlaylist.length;
-        playSong(currentPlaylist[currentIndex], currentPlaylist);
-      }
-    });
-
-    function toggleFavorite(song) {
-      fetch('/api/favorites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ song })
-      }).then(res => res.json())
-        .then(data => {
-          if (data.success) alert(`Toggled favorite: ${song}`);
-        });
-    }
-
-    function promptAddToPlaylist(song) {
-      const name = prompt('Add to which playlist?');
-      if (!name) return;
-      fetch('/api/add-to-playlist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ name, song })
-      }).then(() => location.reload());
-    }
-
-    function removeFromPlaylist(name, song) {
-      fetch('/api/remove-from-playlist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ name, song })
-      }).then(() => location.reload());
-    }
-
-    document.getElementById('upload-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: formData
-      }).then(() => location.reload());
-    });
-  </script>
+  <script src="playlist.js"></script>
 </body>
 </html>
+<input type="text" id="search" placeholder="Search songs or playlists">
+<div id="search-results"></div>
+document.getElementById('search').addEventListener('input', e => {
+  const query = e.target.value.toLowerCase();
+  const results = allSongs.filter(song => song.toLowerCase().includes(query));
+  displayResults(results);
+});

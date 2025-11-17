@@ -1,139 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Your Playlists</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { color: #2c3e50; }
-    h3 { margin-top: 30px; }
-    img { border-radius: 8px; margin: 10px 0; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; }
-    button { margin-left: 10px; }
-  </style>
+  <title>Your Playlist</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+  </script>
 </head>
 <body>
-  <h2>🎶 Welcome to Music-Era</h2>
+  <div class="container">
+    <h2>Welcome sampm.meena@gmail.com</h2>
 
-  <!-- Playlist folders -->
-  <h3>Your Playlists:</h3>
-  <div id="playlist-folders"></div>
+    <h3>Your Playlist:</h3>
+    <form id="upload-form">
+      <input type="file" id="song" accept="audio/*" required>
+      <button type="submit">Upload</button>
+    </form>
 
-  <!-- Create new playlist -->
-  <h3>Create New Playlist:</h3>
-  <form id="create-playlist-form">
-    <input type="text" id="newPlaylistName" placeholder="Enter playlist name" required>
-    <button type="submit">Create</button>
-  </form>
+    <audio id="player" controls></audio>
 
-  <!-- Upload cover art -->
-  <h3>Upload Playlist Cover:</h3>
-  <form id="cover-form" enctype="multipart/form-data">
-    <input type="text" name="playlistName" placeholder="Playlist name" required>
-    <input type="file" name="cover" accept=".jpg,.png" required>
-    <button type="submit">Upload Cover</button>
-  </form>
+    <div id="now-playing" class="now-playing">
+      <img id="album-art" src="covers/default.jpg" alt="Album Art" />
+      <div>
+        <h3 id="song-title">Song Title</h3>
+        <p id="playlist-name">Playlist: My Playlist</p>
+      </div>
+    </div>
+
+    <button id="shuffle">Shuffle</button>
+    <button id="repeat">Repeat</button>
+
+    <h3>Recently Played</h3>
+    <ul id="recent-list"></ul>
+  </div>
 
   <script>
-    const token = localStorage.getItem('token'); // assume token stored after login
+    const token = localStorage.getItem('token');
+    const player = document.getElementById('player');
+    const recentList = document.getElementById('recent-list');
 
-    // Load playlists
-    fetch('/api/playlists?token=' + token)
-      .then(res => res.json())
-      .then(data => {
-        const folders = data.playlists;
-        const container = document.getElementById('playlist-folders');
-        for (const name in folders) {
-          const playlist = folders[name];
-          const cover = playlist.cover ? `/covers/${playlist.cover}` : '/default.jpg';
-          const list = playlist.songs.map(song => `
-            <li>
-              ${song}
-              <button onclick="promptAddToPlaylist('${song}')">➕ Add</button>
-              <button onclick="removeFromPlaylist('${name}', '${song}')">🗑️ Remove</button>
-            </li>
-          `).join('');
-          const shareLink = `${window.location.origin}/shared.html?user=${encodeURIComponent(data.email)}&playlist=${encodeURIComponent(name)}`;
-          container.innerHTML += `
-            <h4>${name}
-              <button onclick="deletePlaylist('${name}')">❌ Delete</button>
-              <button onclick="copyShareLink('${shareLink}')">🔗 Share</button>
-            </h4>
-            <img src="${cover}" alt="${name} cover" width="150">
-            <ul>${list}</ul>
-          `;
-        }
-      });
-
-    // Create playlist
-    document.getElementById('create-playlist-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = document.getElementById('newPlaylistName').value.trim();
-      if (!name) return;
-      fetch('/api/playlists', {
+    // Track song play
+    player.addEventListener('play', () => {
+      const song = player.src.split('/').pop();
+      fetch('/api/recent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ playlistName: name, song: null })
-      }).then(res => res.json()).then(data => {
-        if (data.success) { alert(`Playlist "${name}" created!`); location.reload(); }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ song })
       });
     });
 
-    // Add song to playlist
-    function promptAddToPlaylist(song) {
-      const playlistName = prompt('Enter playlist name to add this song to:');
-      if (!playlistName) return;
-      fetch('/api/playlists', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ playlistName, song })
-      }).then(res => res.json()).then(data => {
-        if (data.success) alert(`Added "${song}" to "${playlistName}"`);
+    // Fetch recent songs
+    fetch('/api/recent', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      data.forEach(song => {
+        const li = document.createElement('li');
+        li.textContent = song;
+        recentList.appendChild(li);
       });
-    }
+    });
 
-    // Remove song
-    function removeFromPlaylist(playlistName, song) {
-      fetch('/api/playlists/remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ playlistName, song })
-      }).then(res => res.json()).then(data => {
-        if (data.success) { alert(`Removed "${song}" from "${playlistName}"`); location.reload(); }
-      });
-    }
-
-    // Delete playlist
-    function deletePlaylist(playlistName) {
-      if (!confirm(`Delete playlist "${playlistName}"?`)) return;
-      fetch('/api/playlists/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ playlistName })
-      }).then(res => res.json()).then(data => {
-        if (data.success) { alert(`Deleted playlist "${playlistName}"`); location.reload(); }
-      });
-    }
-
-    // Copy share link
-    function copyShareLink(link) {
-      navigator.clipboard.writeText(link).then(() => {
-        alert('Playlist link copied to clipboard!');
-      });
-    }
-
-    // Upload cover
-    document.getElementById('cover-form').addEventListener('submit', (e) => {
+    // Optional: handle upload
+    document.getElementById('upload-form').addEventListener('submit', e => {
       e.preventDefault();
-      const form = e.target;
-      const formData = new FormData(form);
-      fetch('/api/playlist-cover', {
+      const file = document.getElementById('song').files[0];
+      const formData = new FormData();
+      formData.append('song', file);
+
+      fetch('/api/upload', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token },
         body: formData
-      }).then(res => res.json()).then(data => {
-        if (data.success) { alert('Cover uploaded!'); location.reload(); }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('Upload successful!');
+          player.src = data.songUrl;
+          document.getElementById('song-title').textContent = file.name;
+        } else {
+          alert('Upload failed');
+        }
       });
     });
   </script>

@@ -1,56 +1,109 @@
-body {
-  font-family: sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f9f9f9;
+/* Animation for page entry */
+@keyframes fadeBounce {
+  0% { opacity: 0; transform: translateY(-30px); }
+  60% { opacity: 1; transform: translateY(10px); }
+  100% { transform: translateY(0); }
 }
 
+/* Main layout container */
 .container {
   padding: 1rem;
   max-width: 600px;
   margin: auto;
+  animation: fadeBounce 1s ease-out;
+  font-family: Arial, sans-serif;
 }
 
-input, button {
-  width: 100%;
-  padding: 0.8rem;
-  margin: 0.5rem 0;
-  font-size: 1rem;
+/* Headings */
+h2, h3 {
+  margin-top: 1rem;
+  color: #333;
 }
 
+/* Upload form */
+form {
+  margin-bottom: 1rem;
+}
+
+input[type="file"] {
+  margin-bottom: 0.5rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  margin: 0.3rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Audio player */
 audio {
   width: 100%;
   margin-top: 1rem;
 }
 
-.playlist-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: #fff;
-  margin-bottom: 0.5rem;
-  border-radius: 5px;
-}
-
-@media (max-width: 600px) {
-  .playlist-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  button {
-    font-size: 0.9rem;
-  }
-}
+/* Now Playing section */
 .now-playing {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
+  background: #f9f9f9;
+  padding: 0.5rem;
+  border-radius: 8px;
 }
+
 .now-playing img {
   width: 80px;
   height: 80px;
   border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Recently Played list */
+#recent-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 1rem;
+}
+
+#recent-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.95rem;
+}
+
+/* Optional: Dark mode */
+body.dark {
+  background-color: #121212;
+  color: #eee;
+}
+
+body.dark .container {
+  background-color: #1e1e1e;
+}
+
+body.dark button {
+  background-color: #333;
+  color: #eee;
+}
+
+body.dark button:hover {
+  background-color: #555;
+}
+
+body.dark .now-playing {
+  background-color: #2a2a2a;
+}
+
+body.dark #recent-list li {
+  border-color: #444;
 }

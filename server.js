@@ -14,6 +14,8 @@ const SECRET = 'music-era-secret';
 const usersPath = path.join(__dirname, 'data', 'users.json');
 const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
 const favoritesPath = path.join(__dirname, 'data', 'favorites.json');
+const recentPath = path.join(__dirname, 'data', 'recent.json');
+if (!fs.existsSync(recentPath)) fs.writeFileSync(recentPath, JSON.stringify({}));
 
 // ✅ Ensure songs folder exists
 const songsDir = path.join(__dirname, 'public', 'songs');
@@ -111,6 +113,25 @@ app.post('/api/favorites', verifyToken, (req, res) => {
   }
   fs.writeFileSync(favoritesPath, JSON.stringify(favorites, null, 2));
   res.json({ success: true });
+});
+
+app.post('/api/recent', verifyToken, (req, res) => {
+  const { song } = req.body;
+  const email = req.user.email;
+  const recent = JSON.parse(fs.readFileSync(recentPath, 'utf8'));
+
+  if (!recent[email]) recent[email] = [];
+  recent[email].unshift(song); // add to front
+  recent[email] = [...new Set(recent[email])].slice(0, 10); // remove duplicates, keep last 10
+
+  fs.writeFileSync(recentPath, JSON.stringify(recent, null, 2));
+  res.json({ success: true });
+});
+
+app.get('/api/recent', verifyToken, (req, res) => {
+  const email = req.user.email;
+  const recent = JSON.parse(fs.readFileSync(recentPath, 'utf8'));
+  res.json(recent[email] || []);
 });
 
 // ✅ Serve login page at root
