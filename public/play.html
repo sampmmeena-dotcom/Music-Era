@@ -7,58 +7,63 @@
 <body>
   <h2>Now Playing 🎵</h2>
 
-  <audio controls autoplay>
+  <audio id="audio" controls autoplay>
     <source id="audioSource" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
 
+  <br>
+  <label><input type="checkbox" id="repeat"> Repeat</label>
   <br><a href="/playlist.html">Back to Playlist</a>
   <button onclick="logout()">Logout</button>
 
- <script>
-  const token = localStorage.getItem('token');
-  if (!token) window.location.href = '/';
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const song = urlParams.get('song');
-  const audio = document.querySelector('audio');
-  const source = document.getElementById('audioSource');
+    const urlParams = new URLSearchParams(window.location.search);
+    const song = urlParams.get('song');
+    const audio = document.getElementById('audio');
+    const source = document.getElementById('audioSource');
 
-  let playlist = [];
-  let currentIndex = -1;
+    let playlist = [];
+    let currentIndex = -1;
 
-  // Load playlist and find current song index
-  fetch('/api/playlist', {
-    headers: { 'Authorization': 'Bearer ' + token }
-  })
-  .then(res => res.json())
-  .then(data => {
-    playlist = data.songs;
-    const email = data.email;
-    currentIndex = playlist.indexOf(decodeURIComponent(song.split('/').pop()));
-    if (currentIndex === -1) currentIndex = 0;
+    // Load playlist and find current song index
+    fetch('/api/playlist', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      playlist = data.songs;
+      const email = data.email;
+      currentIndex = playlist.indexOf(decodeURIComponent(song.split('/').pop()));
+      if (currentIndex === -1) currentIndex = 0;
 
-    source.src = '/' + song;
-    audio.load();
-    localStorage.setItem('lastPlayed', song);
+      source.src = '/' + song;
+      audio.load();
+      localStorage.setItem('lastPlayed', song);
 
-    // Auto-play next song when current ends
-    audio.addEventListener('ended', () => {
-      currentIndex = (currentIndex + 1) % playlist.length;
-      const nextSong = `users/${email}/${encodeURIComponent(playlist[currentIndex])}`;
-      window.location.href = `/play.html?song=${nextSong}`;
+      // Auto-play next song when current ends
+      audio.addEventListener('ended', () => {
+        if (!document.getElementById('repeat').checked) {
+          currentIndex = (currentIndex + 1) % playlist.length;
+          const nextSong = `users/${email}/${encodeURIComponent(playlist[currentIndex])}`;
+          window.location.href = `/play.html?song=${nextSong}`;
+        }
+      });
     });
-  });
 
-  function logout() {
-    localStorage.removeItem('token');
-    window.location.href = '/';
-  }
-</script>
-  const song = urlParams.get('song');
-if (song) {
-  localStorage.setItem('lastPlayed', song); // Save last played
-  document.getElementById('audioSource').src = '/' + song;
-}
- </body>
+    // Repeat toggle
+    document.getElementById('repeat').addEventListener('change', (e) => {
+      audio.loop = e.target.checked;
+    });
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    }
+  </script>
+</body>
 </html>

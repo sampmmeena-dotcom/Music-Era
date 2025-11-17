@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shared Playlist</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h2>🎧 Shared Playlist</h2>
+  <h3 id="playlist-name"></h3>
+  <ul id="shared-songs"></ul>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('user');
+    const playlistName = params.get('playlist');
+
+    document.getElementById('playlist-name').textContent = playlistName;
+
+    fetch(`/api/public-playlist?user=${email}&playlist=${playlistName}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('shared-songs');
+        data.songs.forEach(song => {
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="/play.html?song=users/${email}/${encodeURIComponent(song)}">${song}</a>`;
+          list.appendChild(li);
+        });
+      });
+  </script>
+</body>
+</html>

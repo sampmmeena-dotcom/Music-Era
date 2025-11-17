@@ -4,4 +4,5 @@ git branch -M main
 git remote add origin https://github.com/sampmeena-dotcom/music-era.git
 git push -u origin main
 secrets/
+!data/favorites.json
 !data/users.json
