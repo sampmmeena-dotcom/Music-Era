@@ -1,9 +1,11 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// ✅ Create /public/songs only if it doesn't exist
 const songsDir = path.join(__dirname, 'public', 'songs');
 if (!fs.existsSync(songsDir)) {
   fs.mkdirSync(songsDir, { recursive: true });
