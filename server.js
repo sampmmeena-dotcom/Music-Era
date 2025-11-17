@@ -109,6 +109,9 @@ app.post('/api/favorites', verifyToken, (req, res) => {
   fs.writeFileSync(favoritesPath, JSON.stringify(favorites, null, 2));
   res.json({ success: true });
 });
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
