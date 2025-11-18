@@ -5,4 +5,4 @@ git remote add origin https://github.com/sampmeena-dotcom/music-era.git
 git push -u origin main
 secrets/
 !data/favorites.json
-!data/users.json
+!data/users.jsonserviceAccountKey.json/
