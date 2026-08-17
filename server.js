@@ -11,31 +11,28 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const SECRET = 'music-era-secret';
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
 const usersPath = path.join(__dirname, 'data', 'users.json');
 const playlistsPath = path.join(__dirname, 'data', 'playlists.json');
 const favoritesPath = path.join(__dirname, 'data', 'favorites.json');
 const recentPath = path.join(__dirname, 'data', 'recent.json');
-if (!fs.existsSync(recentPath)) fs.writeFileSync(recentPath, JSON.stringify({}));
-
-// ✅ Ensure songs folder exists
-const songsDir = path.join(__dirname, 'public', 'songs');
-if (!fs.existsSync(songsDir)) {
-  fs.mkdirSync(songsDir, { recursive: true });
-}
-
-// ✅ Ensure data files exist
 if (!fs.existsSync(usersPath)) fs.writeFileSync(usersPath, JSON.stringify({}));
 if (!fs.existsSync(playlistsPath)) fs.writeFileSync(playlistsPath, JSON.stringify({}));
 if (!fs.existsSync(favoritesPath)) fs.writeFileSync(favoritesPath, JSON.stringify({}));
+if (!fs.existsSync(recentPath)) fs.writeFileSync(recentPath, JSON.stringify({}));
 
 function verifyToken(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token' });
   try {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'No token' });
+    const token = auth.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
     req.user = jwt.verify(token, SECRET);
     next();
-  } catch {
-    res.status(403).json({ error: 'Invalid token' });
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid token' });
   }
 }
 
@@ -60,9 +57,17 @@ app.get('/api/profile', verifyToken, (req, res) => {
 const upload = multer({ dest: 'public/songs/' });
 app.post('/api/upload', verifyToken, upload.single('song'), (req, res) => {
   const file = req.file;
-  const newPath = path.join(file.destination, file.originalname);
-  fs.renameSync(file.path, newPath);
-  res.json({ success: true });
+  if (!file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+  const sanitized = path.basename(file.originalname);
+  const newPath = path.join(file.destination, sanitized);
+  try {
+    fs.renameSync(file.path, newPath);
+  } catch (e) {
+    return res.status(500).json({ success: false, error: 'Could not save file' });
+  }
+  // public/ is served as the static root, so songs are available at /songs/<name>
+  const songUrl = '/songs/' + encodeURIComponent(sanitized);
+  res.json({ success: true, songUrl });
 });
 
 app.get('/api/playlists', verifyToken, (req, res) => {
@@ -70,11 +75,26 @@ app.get('/api/playlists', verifyToken, (req, res) => {
   const playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8'));
   res.json(playlists[email] || {});
 });
-function updateNowPlaying(song, playlist) {
-  document.getElementById('song-title').textContent = song;
-  document.getElementById('playlist-name').textContent = `Playlist: ${playlist}`;
-  document.getElementById('album-art').src = `covers/${playlist}.jpg`; // fallback if not found
-}
+
+// New: return a single playlist (by ?name=) or the first playlist for the user
+app.get('/api/playlist', verifyToken, (req, res) => {
+  const name = req.query.name;
+  const email = req.user.email;
+  const playlists = JSON.parse(fs.readFileSync(playlistsPath, 'utf8')) || {};
+  const userPlaylists = playlists[email] || {};
+  let songs = [];
+  let playlistName = name;
+  if (name && userPlaylists[name]) {
+    songs = userPlaylists[name].songs || [];
+  } else {
+    const keys = Object.keys(userPlaylists);
+    if (keys.length > 0) {
+      playlistName = keys[0];
+      songs = userPlaylists[playlistName].songs || [];
+    }
+  }
+  res.json({ songs, email, playlistName });
+});
 
 app.post('/api/add-to-playlist', verifyToken, (req, res) => {
   const { name, song } = req.body;
@@ -134,9 +154,9 @@ app.get('/api/recent', verifyToken, (req, res) => {
   res.json(recent[email] || []);
 });
 
-// ✅ Serve login page at root
+// Serve login page at root (login.html exists at repository root)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 const PORT = process.env.PORT || 10000;
