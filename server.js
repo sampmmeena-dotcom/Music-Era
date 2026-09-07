@@ -10,7 +10,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const SECRET = 'music-era-secret';
+// Use environment variable for secret, fallback to a strong default
+const SECRET = process.env.JWT_SECRET || require('crypto').randomBytes(32).toString('hex');
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
@@ -38,6 +39,11 @@ function verifyToken(req, res, next) {
 
 app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+  
   const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
   if (!users[email]) {
     users[email] = { email, password };
@@ -46,6 +52,26 @@ app.post('/api/login', (req, res) => {
   if (users[email].password !== password) {
     return res.status(403).json({ error: 'Wrong password' });
   }
+  const token = jwt.sign({ email }, SECRET);
+  res.json({ token });
+});
+
+app.post('/api/signup', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password required' });
+  }
+
+  const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  
+  if (users[email]) {
+    return res.status(409).json({ error: 'User already exists' });
+  }
+
+  users[email] = { email, password };
+  fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+
   const token = jwt.sign({ email }, SECRET);
   res.json({ token });
 });
@@ -156,7 +182,7 @@ app.get('/api/recent', verifyToken, (req, res) => {
 
 // Serve login page at root (login.html exists at repository root)
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 const PORT = process.env.PORT || 10000;
