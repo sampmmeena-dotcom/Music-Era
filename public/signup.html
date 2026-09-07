@@ -2,36 +2,46 @@
 <html>
 <head>
   <title>Signup</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Create Your Music Era Account 🎶</h2>
-  <form id="signupForm">
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
-    <button type="submit">Sign Up</button>
-  </form>
-
-  <p>Already have an account? <a href="/login.html">Login here</a></p>
+  <div class="container">
+    <h2>🎵 Create Your Music Era Account</h2>
+    <form id="signupForm">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password (min 6 chars)" required><br>
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>Already have an account? <a href="/">Login here</a></p>
+    <div id="error" style="color: #d32f2f; margin-top: 10px;"></div>
+  </div>
 
   <script>
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = '';
 
-      const res = await fetch('/api/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
 
-      const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        window.location.href = '/playlist.html';
-      } else {
-        alert('Signup failed: ' + (data.error || 'Unknown error'));
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          window.location.href = '/playlist.html';
+        } else {
+          errorDiv.textContent = '✗ ' + (data.error || 'Signup failed');
+        }
+      } catch (err) {
+        errorDiv.textContent = '✗ Error: ' + err.message;
       }
     });
   </script>
