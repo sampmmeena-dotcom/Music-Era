@@ -1,21 +1,23 @@
 {
   "name": "music-era",
   "version": "1.0.0",
-  "description": "",
+  "description": "Full-stack music streaming app",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": ["music", "streaming", "playlist"],
+  "author": "Music Era",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "dependencies": {
+    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "firebase": "^12.6.0",
-    "firebase-admin": "^13.6.0",
-    "multer": "^2.0.2"
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^1.4.5-lts.1"
   }
 }
