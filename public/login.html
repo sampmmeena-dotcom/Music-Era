@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-   <title>Login</title>
+  <title>Login</title>
   <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.png" type="image/png">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
@@ -14,8 +15,8 @@
   <div class="container">
     <h2>Login</h2>
     <form id="login-form">
-      <input type="email" id="email" placeholder="Email" value="sampm.meena@gmail.com" required><br>
-      <input type="password" id="password" placeholder="Password" value="prav20800" required><br>
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
       <button type="submit">Login</button>
     </form>
   </div>
@@ -37,7 +38,7 @@
           localStorage.setItem('token', data.token);
           window.location.href = 'playlist.html';
         } else {
-          alert('Login failed');
+          alert('Login failed: ' + (data.error || 'Unknown error'));
         }
       });
     });
