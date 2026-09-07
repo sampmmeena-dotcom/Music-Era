@@ -12,7 +12,7 @@
     <button type="submit">Sign Up</button>
   </form>
 
-  <p>Already have an account? <a href="/">Login here</a></p>
+  <p>Already have an account? <a href="/login.html">Login here</a></p>
 
   <script>
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -20,7 +20,7 @@
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
-      const res = await fetch('/signup', {
+      const res = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -28,29 +28,12 @@
 
       const data = await res.json();
       if (data.token) {
-        window.location.href = '/playlist?token=' + data.token;
+        localStorage.setItem('token', data.token);
+        window.location.href = '/playlist.html';
       } else {
-        alert('Signup failed');
+        alert('Signup failed: ' + (data.error || 'Unknown error'));
       }
     });
   </script>
 </body>
 </html>
-localStorage.setItem('token', data.token); // Save token
-window.location.href = '/playlist.html';   // Redirect to playlist page
-app.post('/signup', (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-  if (users[email]) return res.status(409).json({ error: 'User already exists' });
-
-  users[email] = { email, password };
-  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
-
-  const token = jwt.sign({ email }, SECRET_KEY, { expiresIn: '1h' });
-  res.json({ token });
-});
-{
-  "email": "test@example.com",
-  "password": "123456"
-}
